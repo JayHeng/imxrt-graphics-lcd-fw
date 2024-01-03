@@ -29,7 +29,7 @@ const display_operations_t ili9806e_ops = {
     .stop   = ILI9806E_Stop,
 };
 
-static const ili9806e_cmd_t s_hx8394Cmds[] = {
+static const ili9806e_cmd_t s_ili9806eCmds[] = {
     {(const uint8_t[]){0x36U, 0x02U}, 2U},
 
     {(const uint8_t[]){0xB1U, 0x48U, 0x12U, 0x72U, 0x09U, 0x32U, 0x54U, 0x71U, 0x71U, 0x57U, 0x47U}, 11U},
@@ -131,9 +131,9 @@ status_t ILI9806E_Init(display_handle_t *handle, const display_config_t *config)
 
     if (kStatus_Success == status)
     {
-        for (i = 0; i < ARRAY_SIZE(s_hx8394Cmds); i++)
+        for (i = 0; i < ARRAY_SIZE(s_ili9806eCmds); i++)
         {
-            status = MIPI_DSI_GenericWrite(dsiDevice, s_hx8394Cmds[i].cmd, (int32_t)s_hx8394Cmds[i].cmdLen);
+            status = MIPI_DSI_GenericWrite(dsiDevice, s_ili9806eCmds[i].cmd, (int32_t)s_ili9806eCmds[i].cmdLen);
 
             if (kStatus_Success != status)
             {
