@@ -29,40 +29,28 @@ const display_operations_t ili9806e_ops = {
     .stop   = ILI9806E_Stop,
 };
 
-#define ILI9806_DATA		BIT(8)
-
 #define ILI9806_MAX_MSG_LEN	6
 
 struct ili9806e_msg {
-	unsigned int len;
-	u16 msg[ILI9806_MAX_MSG_LEN];
+	int32_t len;
+	uint8_t msg[ILI9806_MAX_MSG_LEN];
 };
 
-#define ILI9806_SET_PAGE(page)	\
-	{				\
-		.len = 6,		\
-		.msg = {		\
-			0xFF,			\
-			ILI9806_DATA | 0xFF,	\
-			ILI9806_DATA | 0x98,	\
-			ILI9806_DATA | 0x06,	\
-			ILI9806_DATA | 0x04,	\
-			ILI9806_DATA | (page)	\
-		},				\
+#define ILI9806_SET_PAGE(page)	                        \
+	{				                                    \
+		.len = 6,		                                \
+		.msg = {0xFF, 0xFF, 0x98, 0x06, 0x04, (page)},	\
 	}
 
 #define ILI9806_SET_REG_PARAM(reg, data)	\
-	{					\
-		.len = 2,			\
-		.msg = {			\
-			(reg),			\
-			ILI9806_DATA | (data),	\
-		},				\
+	{					                    \
+		.len = 2,			                \
+		.msg = {(reg), (data)},				\
 	}
 
 #define ILI9806_SET_REG(reg)	\
-	{				\
-		.len = 1,		\
+	{				            \
+		.len = 1,		        \
 		.msg = { (reg) },		\
 	}
 
@@ -242,9 +230,7 @@ static const struct ili9806e_msg panel_init[] = {
 	ILI9806_SET_REG_PARAM(0xE1, 0x79),
 
 	ILI9806_SET_PAGE(0),
-
-	ILI9806_SET_REG_PARAM(MIPI_DCS_SET_PIXEL_FORMAT,
-			      MIPI_DCS_PIXEL_FMT_18BIT << 4),
+	ILI9806_SET_REG_PARAM(MIPI_DCS_SET_PIXEL_FORMAT, MIPI_DCS_PIXEL_FMT_18BIT << 4),
 	ILI9806_SET_REG_PARAM(MIPI_DCS_SET_TEAR_ON, 0x00),
 	ILI9806_SET_REG(MIPI_DCS_EXIT_SLEEP_MODE),
 };
