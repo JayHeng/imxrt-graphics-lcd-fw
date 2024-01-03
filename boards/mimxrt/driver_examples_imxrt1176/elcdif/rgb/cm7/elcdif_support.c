@@ -137,6 +137,7 @@ void BOARD_InitLcdifClock(void)
      *
      * Use PLL_528 as clock source.
      *
+     * For 60Hz frame rate, the KD050FWFIA019 pixel clock should be 29MHz.
      * For 60Hz frame rate, the RK055IQH091 pixel clock should be 36MHz.
      * the RK055AHD091 pixel clock should be 62MHz.
      */
@@ -145,8 +146,10 @@ void BOARD_InitLcdifClock(void)
         .mux      = 4, /*!< PLL_528. */
 #if (USE_MIPI_PANEL == MIPI_PANEL_RK055AHD091) || (USE_MIPI_PANEL == MIPI_PANEL_RK055MHD091)
         .div = 9,
-#else
+#elif (USE_MIPI_PANEL == MIPI_PANEL_RK055IQH091)
         .div = 15,
+#elif (USE_MIPI_PANEL == MIPI_PANEL_KD050FWFIA019)
+        .div = 18,
 #endif
     };
 

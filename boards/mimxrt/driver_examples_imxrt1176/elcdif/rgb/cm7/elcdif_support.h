@@ -23,7 +23,7 @@
 #define MIPI_PANEL_KD050FWFIA019 3 /* 480 * 854 */
 
 #ifndef USE_MIPI_PANEL
-#define USE_MIPI_PANEL MIPI_PANEL_RK055MHD091
+#define USE_MIPI_PANEL MIPI_PANEL_KD050FWFIA019
 #endif
 
 #if (USE_MIPI_PANEL == MIPI_PANEL_RK055AHD091)
@@ -54,14 +54,14 @@
 #define APP_VFP          16
 #define APP_VBP          14
 #elif (USE_MIPI_PANEL == MIPI_PANEL_KD050FWFIA019)
-#define APP_PANEL_HEIGHT 1280
-#define APP_PANEL_WIDTH  720
-#define APP_HSW          6
-#define APP_HFP          12
-#define APP_HBP          24
-#define APP_VSW          2
-#define APP_VFP          16
-#define APP_VBP          14
+#define APP_PANEL_HEIGHT 854
+#define APP_PANEL_WIDTH  480
+#define APP_HSW          4
+#define APP_HFP          18
+#define APP_HBP          30
+#define APP_VSW          4
+#define APP_VFP          20
+#define APP_VBP          30
 #endif
 #define APP_POL_FLAGS \
     (kELCDIF_DataEnableActiveHigh | kELCDIF_VsyncActiveLow | kELCDIF_HsyncActiveLow | kELCDIF_DriveDataOnFallingClkEdge)

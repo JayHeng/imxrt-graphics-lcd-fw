@@ -687,7 +687,7 @@
                 </option>
                 <option>
                     <name>OOCOutputFile</name>
-                    <state></state>
+                    <state>elcdif_rgb_cm7.srec</state>
                 </option>
                 <option>
                     <name>OOCCommandLineProducer</name>
@@ -695,7 +695,7 @@
                 </option>
                 <option>
                     <name>OOCObjCopyEnable</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
             </data>
         </settings>
@@ -3244,7 +3244,7 @@
                 </option>
                 <option>
                     <name>IlinkTrustzoneImportLibraryOut</name>
-                    <state>###Unitialized###</state>
+                    <state>elcdif_rgb_cm7_import_lib.o</state>
                 </option>
                 <option>
                     <name>OILinkExtraOption</name>
