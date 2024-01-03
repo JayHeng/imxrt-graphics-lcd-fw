@@ -11,6 +11,7 @@
 #include "fsl_rm68191.h"
 #include "fsl_rm68200.h"
 #include "fsl_hx8394.h"
+#include "fsl_ili9806e.h"
 #include "elcdif_support.h"
 
 uint32_t mipiDsiTxEscClkFreq_Hz;
@@ -92,7 +93,7 @@ static display_handle_t hx8394Handle = {
     .ops      = &hx8394_ops,
 };
 
-#else
+#elif (USE_MIPI_PANEL == MIPI_PANEL_RK055IQH091)
 
 static mipi_dsi_device_t dsiDevice = {
     .virtualChannel = 0,
@@ -108,6 +109,24 @@ static const rm68191_resource_t rm68191Resource = {
 static display_handle_t rm68191Handle = {
     .resource = &rm68191Resource,
     .ops      = &rm68191_ops,
+};
+
+#elif (USE_MIPI_PANEL == MIPI_PANEL_KD050FWFIA019)
+
+static mipi_dsi_device_t dsiDevice = {
+    .virtualChannel = 0,
+    .xferFunc       = PANEL_DSI_Transfer,
+};
+
+static const hx8394_resource_t ili9806eResource = {
+    .dsiDevice    = &dsiDevice,
+    .pullResetPin = PANEL_PullResetPin,
+    .pullPowerPin = PANEL_PullPowerPin,
+};
+
+static display_handle_t ili9806eHandle = {
+    .resource = &ili9806eResource,
+    .ops      = &ili9806e_ops,
 };
 #endif
 
@@ -162,8 +181,10 @@ static status_t BOARD_InitLcdPanel(void)
     status = RM68200_Init(&rm68200Handle, &displayConfig);
 #elif (USE_MIPI_PANEL == MIPI_PANEL_RK055MHD091)
     status = HX8394_Init(&hx8394Handle, &displayConfig);
-#else
+#elif (USE_MIPI_PANEL == MIPI_PANEL_RK055IQH091)
     status = RM68191_Init(&rm68191Handle, &displayConfig);
+#elif (USE_MIPI_PANEL == MIPI_PANEL_KD050FWFIA019)
+    status = ILI9806E_Init(&ili9806eHandle, &displayConfig);
 #endif
 
     if (status == kStatus_Success)
