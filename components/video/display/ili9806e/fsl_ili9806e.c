@@ -13,11 +13,30 @@
  ******************************************************************************/
 #define ILI9806E_DelayMs VIDEO_DelayMs
 
-typedef struct
-{
-    const uint8_t *cmd;
-    uint8_t cmdLen;
-} ili9806e_cmd_t;
+#define ILI9806_MAX_MSG_LEN	6
+
+struct ili9806e_msg {
+    int32_t len;
+    uint8_t msg[ILI9806_MAX_MSG_LEN];
+};
+
+#define ILI9806_SET_PAGE(page)                          \
+    {                                                   \
+        .len = 6,                                       \
+        .msg = {0xFF, 0xFF, 0x98, 0x06, 0x04, (page)},  \
+    }
+
+#define ILI9806_SET_REG_PARAM(reg, data)    \
+    {                                       \
+        .len = 2,                           \
+        .msg = {(reg), (data)},             \
+    }
+
+#define ILI9806_SET_REG(reg)    \
+    {                           \
+        .len = 1,               \
+        .msg = { (reg) },       \
+    }
 
 /*******************************************************************************
  * Variables
@@ -29,32 +48,7 @@ const display_operations_t ili9806e_ops = {
     .stop   = ILI9806E_Stop,
 };
 
-#define ILI9806_MAX_MSG_LEN	6
-
-struct ili9806e_msg {
-	int32_t len;
-	uint8_t msg[ILI9806_MAX_MSG_LEN];
-};
-
-#define ILI9806_SET_PAGE(page)	                        \
-	{				                                    \
-		.len = 6,		                                \
-		.msg = {0xFF, 0xFF, 0x98, 0x06, 0x04, (page)},	\
-	}
-
-#define ILI9806_SET_REG_PARAM(reg, data)	\
-	{					                    \
-		.len = 2,			                \
-		.msg = {(reg), (data)},				\
-	}
-
-#define ILI9806_SET_REG(reg)	\
-	{				            \
-		.len = 1,		        \
-		.msg = { (reg) },		\
-	}
-
-static const struct ili9806e_msg panel_init[] = {
+static const struct ili9806e_msg s_ili9806eMsgs[] = {
 	ILI9806_SET_PAGE(1),
 
 	/* interface mode
@@ -200,10 +194,6 @@ static const struct ili9806e_msg panel_init[] = {
 	ILI9806_SET_REG(0x29),
 };
 
-#define NUM_INIT_REGS ARRAY_SIZE(panel_init)
-
-
-
 /*******************************************************************************
  * Code
  ******************************************************************************/
@@ -226,14 +216,16 @@ status_t ILI9806E_Init(display_handle_t *handle, const display_config_t *config)
     ILI9806E_DelayMs(1U);
 
     /* Perform reset. */
-    resource->pullResetPin(false);
-    ILI9806E_DelayMs(50U);
     resource->pullResetPin(true);
-    ILI9806E_DelayMs(50U);
+    ILI9806E_DelayMs(10U);
+    resource->pullResetPin(false);
+    ILI9806E_DelayMs(10U);
+    resource->pullResetPin(true);
+    ILI9806E_DelayMs(120U);
     
-    for (i = 0; i < ARRAY_SIZE(panel_init); i++)
+    for (i = 0; i < ARRAY_SIZE(s_ili9806eMsgs); i++)
     {
-        status = MIPI_DSI_GenericWrite(dsiDevice, panel_init[i].msg, panel_init[i].len);
+        status = MIPI_DSI_GenericWrite(dsiDevice, s_ili9806eMsgs[i].msg, s_ili9806eMsgs[i].len);
 
         if (kStatus_Success != status)
         {
