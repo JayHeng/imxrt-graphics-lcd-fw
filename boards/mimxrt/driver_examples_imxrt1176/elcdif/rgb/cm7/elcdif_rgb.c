@@ -51,7 +51,22 @@ static void BOARD_ResetDisplayMix(void)
     }
 }
 
+#if (USE_MIPI_PANEL == MIPI_PANEL_G1120B0MIPI)
+void CM7_GPIO2_3_IRQHandler(void)
+{
+    uint32_t intStatus;
 
+    intStatus = GPIO_PortGetInterruptFlags(BOARD_MIPI_PANEL_TE_GPIO);
+
+    GPIO_PortClearInterruptFlags(BOARD_MIPI_PANEL_TE_GPIO, intStatus);
+
+    if (intStatus & (1U << BOARD_MIPI_PANEL_TE_PIN))
+    {
+        s_frameDone = true;
+    }
+    SDK_ISR_EXIT_BARRIER;
+}
+#endif
 void APP_LCDIF_IRQHandler(void)
 {
     uint32_t intStatus;
@@ -80,7 +95,7 @@ void APP_ELCDIF_Init(void)
         .vbp           = APP_VBP,
         .polarityFlags = APP_POL_FLAGS,
         .bufferAddr    = (uint32_t)s_frameBuffer[0],
-        .pixelFormat   = kELCDIF_PixelFormatXRGB8888,
+        .pixelFormat   = APP_LCDIF_PIXEL_FORMAT,
         .dataBus       = APP_LCDIF_DATA_BUS,
     };
 

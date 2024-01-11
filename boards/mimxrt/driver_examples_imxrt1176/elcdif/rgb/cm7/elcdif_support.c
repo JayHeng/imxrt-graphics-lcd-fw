@@ -12,13 +12,32 @@
 #include "fsl_rm68200.h"
 #include "fsl_hx8394.h"
 #include "fsl_ili9806e.h"
+#include "fsl_dc_fb_dsi_cmd.h"
+#include "fsl_rm67162.h"
+#include "mipi_dsi_aux.h"
+//#include "auo141_display.h"
 #include "elcdif_support.h"
+
+/*******************************************************************************
+ * Definitions
+ ******************************************************************************/
+
+
+/*******************************************************************************
+ * Prototypes
+ ******************************************************************************/
+
+extern void APP_LCDIF_IRQHandler(void);
+void BOARD_InitMipiPanelTEPin(void);
+
+/*******************************************************************************
+ * Variables
+ ******************************************************************************/
 
 uint32_t mipiDsiTxEscClkFreq_Hz;
 uint32_t mipiDsiDphyBitClkFreq_Hz;
 uint32_t mipiDsiDphyRefClkFreq_Hz;
 uint32_t mipiDsiDpiClkFreq_Hz;
-extern void APP_LCDIF_IRQHandler(void);
 
 const MIPI_DSI_Type g_mipiDsi = {
     .host = DSI_HOST,
@@ -128,6 +147,35 @@ static display_handle_t ili9806eHandle = {
     .resource = &ili9806eResource,
     .ops      = &ili9806e_ops,
 };
+
+#elif (USE_MIPI_PANEL == MIPI_PANEL_G1120B0MIPI)
+
+static mipi_dsi_device_t dsiDevice = {
+    .virtualChannel = 0,
+    .xferFunc       = PANEL_DSI_Transfer,
+};
+
+static const rm67162_resource_t rm67162Resource = {
+    .dsiDevice    = &dsiDevice,
+    .pullResetPin = PANEL_PullResetPin,
+    .pullPowerPin = PANEL_PullPowerPin,
+};
+
+static display_handle_t rm67162Handle = {
+    .resource = &rm67162Resource,
+    .ops      = &rm67162_ops,
+};
+
+//static const auo141_resource_t auo141Resource = {
+//    .dsiDevice    = &dsiDevice,
+//    .pullResetPin = PANEL_PullResetPin,
+//    .pullPowerPin = PANEL_PullPowerPin,
+//};
+//
+//static display_handle_t auo141Handle = {
+//    .resource = &auo141Resource,
+//    .ops      = &auo141_ops,
+//};
 #endif
 
 void BOARD_InitLcdifClock(void)
@@ -150,6 +198,8 @@ void BOARD_InitLcdifClock(void)
         .div = 15,
 #elif (USE_MIPI_PANEL == MIPI_PANEL_KD050FWFIA019)
         .div = 18,
+#elif (USE_MIPI_PANEL == MIPI_PANEL_G1120B0MIPI)
+        .div = 56,
 #endif
     };
 
@@ -160,20 +210,25 @@ void BOARD_InitLcdifClock(void)
 
 static status_t BOARD_InitLcdPanel(void)
 {
-    status_t status;
+    status_t status = kStatus_Success;
 
     const gpio_pin_config_t pinConfig = {kGPIO_DigitalOutput, 0, kGPIO_NoIntmode};
 
-    const display_config_t displayConfig = {
-        .resolution   = FSL_VIDEO_RESOLUTION(APP_PANEL_WIDTH, APP_PANEL_HEIGHT),
-        .hsw          = APP_HSW,
-        .hfp          = APP_HFP,
-        .hbp          = APP_HBP,
-        .vsw          = APP_VSW,
-        .vfp          = APP_VFP,
-        .vbp          = APP_VBP,
-        .controlFlags = 0,
-        .dsiLanes     = APP_MIPI_DSI_LANE_NUM,
+    const dc_fb_dsi_cmd_config_t panelConfig = {
+      .commonConfig =
+          {
+            .resolution   = FSL_VIDEO_RESOLUTION(APP_PANEL_WIDTH, APP_PANEL_HEIGHT),
+            .hsw          = APP_HSW,
+            .hfp          = APP_HFP,
+            .hbp          = APP_HBP,
+            .vsw          = APP_VSW,
+            .vfp          = APP_VFP,
+            .vbp          = APP_VBP,
+            .controlFlags = 0,
+            .dsiLanes     = APP_MIPI_DSI_LANE_NUM,
+            .pixelFormat  = APP_BUF_PIXEL_FORMAT,
+          },
+       .useTEPin = true,
     };
 
     GPIO_PinInit(BOARD_MIPI_PANEL_POWER_GPIO, BOARD_MIPI_PANEL_POWER_PIN, &pinConfig);
@@ -181,13 +236,16 @@ static status_t BOARD_InitLcdPanel(void)
     GPIO_PinInit(BOARD_MIPI_PANEL_RST_GPIO, BOARD_MIPI_PANEL_RST_PIN, &pinConfig);
 
 #if (USE_MIPI_PANEL == MIPI_PANEL_RK055AHD091)
-    status = RM68200_Init(&rm68200Handle, &displayConfig);
+    status = RM68200_Init(&rm68200Handle, &panelConfig.commonConfig);
 #elif (USE_MIPI_PANEL == MIPI_PANEL_RK055MHD091)
-    status = HX8394_Init(&hx8394Handle, &displayConfig);
+    status = HX8394_Init(&hx8394Handle, &panelConfig.commonConfig);
 #elif (USE_MIPI_PANEL == MIPI_PANEL_RK055IQH091)
-    status = RM68191_Init(&rm68191Handle, &displayConfig);
+    status = RM68191_Init(&rm68191Handle, &panelConfig.commonConfig);
 #elif (USE_MIPI_PANEL == MIPI_PANEL_KD050FWFIA019)
-    status = ILI9806E_Init(&ili9806eHandle, &displayConfig);
+    status = ILI9806E_Init(&ili9806eHandle, &panelConfig.commonConfig);
+#elif (USE_MIPI_PANEL == MIPI_PANEL_G1120B0MIPI)
+    BOARD_InitMipiPanelTEPin();
+    status = RM67162_Init(&rm67162Handle, &panelConfig.commonConfig);
 #endif
 
     if (status == kStatus_Success)
@@ -241,8 +299,13 @@ static void BOARD_SetMipiDsiConfig(void)
     dsi_dphy_config_t dphyConfig;
 
     const dsi_dpi_config_t dpiConfig = {.pixelPayloadSize = APP_PANEL_WIDTH,
+#if (APP_DATA_BUS == 24)
                                         .dpiColorCoding   = kDSI_Dpi24Bit,
                                         .pixelPacket      = kDSI_PixelPacket24Bit,
+#elif (APP_DATA_BUS == 16)
+                                        .dpiColorCoding   = kDSI_Dpi16BitConfig1,
+                                        .pixelPacket      = kDSI_PixelPacket16Bit,
+#endif
                                         .videoMode        = kDSI_DpiBurst,
                                         .bllpMode         = kDSI_DpiBllpLowPower,
                                         .polarityFlags    = kDSI_DpiVsyncActiveLow | kDSI_DpiHsyncActiveLow,
@@ -282,7 +345,7 @@ static void BOARD_SetMipiDsiConfig(void)
      *
      * Note that the DSI output pixel is 24bit per pixel.
      */
-    mipiDsiDphyBitClkFreq_Hz = mipiDsiDpiClkFreq_Hz * (24 / APP_MIPI_DSI_LANE_NUM);
+    mipiDsiDphyBitClkFreq_Hz = mipiDsiDpiClkFreq_Hz * (APP_DATA_BUS / APP_MIPI_DSI_LANE_NUM);
 
     mipiDsiDphyBitClkFreq_Hz = APP_MIPI_DPHY_BIT_CLK_ENLARGE(mipiDsiDphyBitClkFreq_Hz);
 
@@ -336,3 +399,44 @@ void APP_ELCDIF_IRQHandler(void)
     APP_LCDIF_IRQHandler();
     __DSB();
 }
+
+void BOARD_InitMipiPanelTEPin(void)
+{
+    const gpio_pin_config_t tePinConfig = {
+        .direction = kGPIO_DigitalInput,
+        .outputLogic  = 0,
+        .interruptMode = kGPIO_IntRisingEdge,
+    };
+
+    /*
+     * TE pin configure method:
+     *
+     * The TE pin interrupt is like this:
+     *
+     *            VSYNC
+     *         +--------+
+     *         |        |
+     *         |        |
+     * --------+        +----------------
+     *
+     * 1. If one frame send time is shorter than one frame refresh time, then set
+     *    TE pin interrupt at the start of VSYNC.
+     * 2. If one frame send time is longer than one frame refresh time, and shorter
+     *    than two frames refresh time, then set TE pin interrupt at the end of VSYNC.
+     * 3. If one frame send time is longer than two frame refresh time, tearing effect
+     *    could not be removed.
+     *
+     * For RM67162 @60Hz frame rate in single core version, frame refresh time is 16.7 ms. After test,
+     * one frame send time is shorter than one frame refresh time. So TE interrupt is
+     * set to start of VSYNC.
+     */
+
+    GPIO_PinInit(BOARD_MIPI_PANEL_TE_GPIO, BOARD_MIPI_PANEL_TE_PIN, &tePinConfig);
+
+    GPIO_PortClearInterruptFlags(BOARD_MIPI_PANEL_TE_GPIO, 1<<BOARD_MIPI_PANEL_TE_PIN);
+    GPIO_PortEnableInterrupts(BOARD_MIPI_PANEL_TE_GPIO, 1<<BOARD_MIPI_PANEL_TE_PIN);
+
+    NVIC_SetPriority(BOARD_MIPI_PANEL_TE_IRQ, 3);
+    NVIC_EnableIRQ(BOARD_MIPI_PANEL_TE_IRQ);
+}
+
