@@ -73,6 +73,17 @@
 #define APP_VSW          0
 #define APP_VFP          0
 #define APP_VBP          0
+#endif
+
+#define APP_POL_FLAGS \
+    (kELCDIF_DataEnableActiveHigh | kELCDIF_VsyncActiveLow | kELCDIF_HsyncActiveLow | kELCDIF_DriveDataOnFallingClkEdge)
+
+/* Frame buffer data alignment, for better performance, the LCDIF frame buffer should be 64B align. */
+#define FRAME_BUFFER_ALIGN 64
+
+#if (USE_MIPI_PANEL == MIPI_PANEL_G1120B0MIPI)
+#define APP_IMG_HEIGHT     APP_BUF_HEIGHT
+#define APP_IMG_WIDTH      APP_BUF_WIDTH
 
 #define APP_BUF_BYTE_PER_PIXEL 4
 #define BOARD_MIPI_CLK_HZ      500000000U /*500MHz*/
@@ -90,31 +101,27 @@
 #define DEMO_RM67162_BUFFER_RGB888   1
 #define DEMO_RM67162_BUFFER_XRGB8888 2
 #define DEMO_RM67162_BUFFER_FORMAT DEMO_RM67162_BUFFER_XRGB8888
-#endif
-
-#define APP_POL_FLAGS \
-    (kELCDIF_DataEnableActiveHigh | kELCDIF_VsyncActiveLow | kELCDIF_HsyncActiveLow | kELCDIF_DriveDataOnFallingClkEdge)
-
-/* Frame buffer data alignment, for better performance, the LCDIF frame buffer should be 64B align. */
-#define FRAME_BUFFER_ALIGN 64
-
-#if (USE_MIPI_PANEL == MIPI_PANEL_G1120B0MIPI)
-#define APP_IMG_HEIGHT     APP_BUF_HEIGHT
-#define APP_IMG_WIDTH      APP_BUF_WIDTH
 #else
 #define APP_IMG_HEIGHT     APP_PANEL_HEIGHT
 #define APP_IMG_WIDTH      APP_PANEL_WIDTH
+
+#define APP_BUF_BYTE_PER_PIXEL 4
+#define APP_VIDEO_PIXEL_FORMAT kVIDEO_PixelFormatXRGB8888
 #endif
 
 extern const MIPI_DSI_Type g_mipiDsi;
 #define APP_MIPI_DSI          (&g_mipiDsi)
-#define FRAME_BUFFER_ALIGN 64
+
 #if (USE_MIPI_PANEL == MIPI_PANEL_G1120B0MIPI)
 #define APP_MIPI_DSI_LANE_NUM 1
 #else
 #define APP_MIPI_DSI_LANE_NUM 2
 #endif
+
 #define APP_MIPI_DSI_IRQn     MIPI_DSI_IRQn
+
+/* Frame buffer data alignment, for better performance, the LCDIF frame buffer should be 64B align. */
+#define FRAME_BUFFER_ALIGN 64
 
 /*
  * The DPHY bit clock must be fast enough to send out the pixels, it should be

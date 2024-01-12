@@ -35,7 +35,7 @@ static volatile bool s_frameDone = false;
 
 static volatile bool s_newFrameShown = false;
 static dc_fb_info_t s_fbInfo;
-static volatile uint8_t s_frameBufferIndex;
+static volatile uint8_t s_frameBufferIndex = 0;
 
 AT_NONCACHEABLE_SECTION_ALIGN(static uint8_t s_frameBuffer[2][APP_IMG_HEIGHT][APP_IMG_WIDTH][APP_BUF_BYTE_PER_PIXEL], FRAME_BUFFER_ALIGN);
 
