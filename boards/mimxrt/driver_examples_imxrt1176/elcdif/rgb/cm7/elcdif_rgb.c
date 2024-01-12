@@ -33,6 +33,10 @@
  ******************************************************************************/
 static volatile bool s_frameDone = false;
 
+static volatile bool s_newFrameShown = false;
+static dc_fb_info_t s_fbInfo;
+static volatile uint8_t s_frameBufferIndex;
+
 AT_NONCACHEABLE_SECTION_ALIGN(static uint8_t s_frameBuffer[2][APP_IMG_HEIGHT][APP_IMG_WIDTH][APP_BUF_BYTE_PER_PIXEL], FRAME_BUFFER_ALIGN);
 
 /*******************************************************************************
@@ -64,7 +68,6 @@ void CM7_GPIO2_3_IRQHandler(void)
     if (intStatus & (1U << BOARD_MIPI_PANEL_TE_PIN))
     {
         BOARD_DisplayTEPinHandler();
-        s_frameDone = true;
     }
     SDK_ISR_EXIT_BARRIER;
 }
@@ -190,13 +193,17 @@ void APP_FillFrameBuffer(uint8_t frameBuffer[APP_IMG_HEIGHT][APP_IMG_WIDTH][APP_
     }
 }
 
+static void DEMO_BufferSwitchOffCallback(void *param, void *switchOffBuffer)
+{
+    s_newFrameShown = true;
+    s_frameBufferIndex ^= 1;
+}
+
 /*!
  * @brief Main function
  */
 int main(void)
 {
-    uint32_t frameBufferIndex = 0;
-
     BOARD_ConfigMPU();
     BOARD_BootClockRUN();
     BOARD_ResetDisplayMix();
@@ -207,8 +214,7 @@ int main(void)
 
     /* Clear the frame buffer. */
     memset(s_frameBuffer, 0, sizeof(s_frameBuffer));
-
-    APP_FillFrameBuffer(s_frameBuffer[frameBufferIndex]);
+    APP_FillFrameBuffer(s_frameBuffer[s_frameBufferIndex]);
 
 #if (USE_MIPI_PANEL == MIPI_PANEL_G1120B0MIPI)
     PRINTF("Smart MIPI RGB example start...\r\n");
@@ -221,23 +227,28 @@ int main(void)
         return status;
     }
 
-    dc_fb_dsi_cmd_handle_t *dcHandle;
-    dc_fb_dsi_cmd_layer_t *layer;
-    dc_fb_info_t *fbInfo;
-    dcHandle = (dc_fb_dsi_cmd_handle_t *)g_dc.prvData;
-    /* Currently only support one layer, so the layer index is always 0. */
-    layer = &(dcHandle->layers[0]);
-    fbInfo = &(layer->fbInfo);
-    fbInfo->pixelFormat = APP_VIDEO_PIXEL_FORMAT;
-    fbInfo->startX      = APP_BUF_START_X;
-    fbInfo->startY      = APP_BUF_START_Y;
-    fbInfo->width       = APP_BUF_WIDTH;
-    fbInfo->height      = APP_BUF_HEIGHT;
-    fbInfo->strideBytes = APP_BUF_STRIDE_BYTE;
-
-    layer->frameBuffer = (void *)((uint32_t)s_frameBuffer[0]);
-
-    g_dc.ops->setFrameBuffer(&g_dc, 0, layer->frameBuffer);
+    g_dc.ops->getLayerDefaultConfig(&g_dc, 0, &s_fbInfo);
+    s_fbInfo.pixelFormat = APP_VIDEO_PIXEL_FORMAT;
+    s_fbInfo.width       = APP_BUF_WIDTH;
+    s_fbInfo.height      = APP_BUF_HEIGHT;
+    s_fbInfo.startX      = APP_BUF_START_X;
+    s_fbInfo.startY      = APP_BUF_START_Y;
+    s_fbInfo.strideBytes = APP_BUF_STRIDE_BYTE;
+    g_dc.ops->setLayerConfig(&g_dc, 0, &s_fbInfo);
+    g_dc.ops->setCallback(&g_dc, 0, DEMO_BufferSwitchOffCallback, NULL);
+    s_frameBufferIndex = 0;
+    s_newFrameShown  = false;
+    g_dc.ops->setFrameBuffer(&g_dc, 0, s_frameBuffer[s_frameBufferIndex]);
+    /* For the DBI interface display, application must wait for the first
+     * frame buffer sent to the panel.
+     */
+    if ((g_dc.ops->getProperty(&g_dc) & kDC_FB_ReserveFrameBuffer) == 0)
+    {
+        while (s_newFrameShown == false)
+        {
+        }
+    }
+    s_newFrameShown = true;
     g_dc.ops->enableLayer(&g_dc, 0);
 #else
     PRINTF("LCDIF RGB example start...\r\n");
@@ -249,23 +260,22 @@ int main(void)
 
     while (1)
     {
-        frameBufferIndex ^= 1U;
+        uint8_t temp = s_frameBufferIndex ^ 1U;
 
-        APP_FillFrameBuffer(s_frameBuffer[frameBufferIndex]);
+        APP_FillFrameBuffer(s_frameBuffer[temp]);
 
 #if (USE_MIPI_PANEL == MIPI_PANEL_G1120B0MIPI)
-        layer->fbWaitTE = (void *)((uint32_t)s_frameBuffer[frameBufferIndex]);
-        SDK_DelayAtLeastUs(500000, SystemCoreClock);
-        /* Wait for frame buffer sent to display controller video memory. */
-        //while ((g_dc.ops->getProperty(&g_dc) & (uint32_t)kDC_FB_ReserveFrameBuffer))
-        //{}
-        s_frameDone = false;
-        /* Wait for previous frame complete. */
-        while (!s_frameDone)
+        /* Wait for the previous frame buffer is shown, and there is available
+           inactive buffer to fill. */
+        while (s_newFrameShown == false)
         {
         }
+        /* Show the new frame. */
+        s_newFrameShown = false;
+        g_dc.ops->setFrameBuffer(&g_dc, 0, (void *)((uint32_t)s_frameBuffer[temp]));
 #else
-        ELCDIF_SetNextBufferAddr(APP_ELCDIF, (uint32_t)s_frameBuffer[frameBufferIndex]);
+        s_frameBufferIndex = temp;
+        ELCDIF_SetNextBufferAddr(APP_ELCDIF, (uint32_t)s_frameBuffer[s_frameBufferIndex]);
 
         s_frameDone = false;
         /* Wait for previous frame complete. */
