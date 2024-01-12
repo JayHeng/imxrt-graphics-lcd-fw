@@ -73,6 +73,23 @@
 #define APP_VSW          0
 #define APP_VFP          0
 #define APP_VBP          0
+
+#define APP_BUF_BYTE_PER_PIXEL 4
+#define BOARD_MIPI_CLK_HZ      500000000U /*500MHz*/
+#define APP_VIDEO_PIXEL_FORMAT kVIDEO_PixelFormatXRGB8888
+
+/* Where the frame buffer is shown in the screen. */
+#define APP_BUF_START_X 4U
+#define APP_BUF_START_Y 4U
+#define APP_BUF_WIDTH   (400U)
+#define APP_BUF_HEIGHT  (400U)
+#define APP_BUF_STRIDE_BYTE (APP_BUF_WIDTH * APP_BUF_BYTE_PER_PIXEL)
+
+/* Pixel format macro mapping. */
+#define DEMO_RM67162_BUFFER_RGB565   0
+#define DEMO_RM67162_BUFFER_RGB888   1
+#define DEMO_RM67162_BUFFER_XRGB8888 2
+#define DEMO_RM67162_BUFFER_FORMAT DEMO_RM67162_BUFFER_XRGB8888
 #endif
 
 #define APP_POL_FLAGS \
@@ -80,12 +97,24 @@
 
 /* Frame buffer data alignment, for better performance, the LCDIF frame buffer should be 64B align. */
 #define FRAME_BUFFER_ALIGN 64
+
+#if (USE_MIPI_PANEL == MIPI_PANEL_G1120B0MIPI)
+#define APP_IMG_HEIGHT     APP_BUF_HEIGHT
+#define APP_IMG_WIDTH      APP_BUF_WIDTH
+#else
 #define APP_IMG_HEIGHT     APP_PANEL_HEIGHT
 #define APP_IMG_WIDTH      APP_PANEL_WIDTH
+#endif
 
 extern const MIPI_DSI_Type g_mipiDsi;
 #define APP_MIPI_DSI          (&g_mipiDsi)
+#define FRAME_BUFFER_ALIGN 64
+#if (USE_MIPI_PANEL == MIPI_PANEL_G1120B0MIPI)
 #define APP_MIPI_DSI_LANE_NUM 1
+#else
+#define APP_MIPI_DSI_LANE_NUM 2
+#endif
+#define APP_MIPI_DSI_IRQn     MIPI_DSI_IRQn
 
 /*
  * The DPHY bit clock must be fast enough to send out the pixels, it should be
@@ -100,18 +129,22 @@ extern const MIPI_DSI_Type g_mipiDsi;
 
 /* Should call BOARD_InitDisplayInterface to initialize display interface. */
 #define APP_ELCDIF_HAS_DISPLAY_INTERFACE 1
+
 /* When working with MIPI DSI, the output pixel is 24-bit pixel */
-#define APP_DATA_BUS           16
-#define APP_LCDIF_DATA_BUS     kELCDIF_DataBus16Bit
-#define APP_LCDIF_PIXEL_FORMAT kELCDIF_PixelFormatRGB565
-#define APP_BUF_PIXEL_FORMAT   kVIDEO_PixelFormatRGB565
+#define APP_DATA_BUS           24
+#define APP_LCDIF_DATA_BUS     kELCDIF_DataBus24Bit
+#define APP_LCDIF_PIXEL_FORMAT kELCDIF_PixelFormatXRGB8888
 
 /*******************************************************************************
  * Prototypes
  ******************************************************************************/
+// 
 status_t BOARD_InitDisplayInterface(void);
 void BOARD_InitLcdifClock(void);
 void BOARD_EnableLcdInterrupt(void);
+// 
+status_t BOARD_PrepareDisplayController(void);
 void BOARD_DisplayTEPinHandler(void);
+extern const dc_fb_t g_dc;
 
 #endif /* _ELCDIF_SUPPORT_H_ */

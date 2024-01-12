@@ -16,6 +16,7 @@
 #include "clock_config.h"
 #include "board.h"
 #include "elcdif_support.h"
+#include "fsl_dc_fb_dsi_cmd.h"
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
@@ -32,7 +33,7 @@
  ******************************************************************************/
 static volatile bool s_frameDone = false;
 
-AT_NONCACHEABLE_SECTION_ALIGN(static uint32_t s_frameBuffer[2][APP_IMG_HEIGHT][APP_IMG_WIDTH], FRAME_BUFFER_ALIGN);
+AT_NONCACHEABLE_SECTION_ALIGN(static uint8_t s_frameBuffer[2][APP_IMG_HEIGHT][APP_IMG_WIDTH][APP_BUF_BYTE_PER_PIXEL], FRAME_BUFFER_ALIGN);
 
 /*******************************************************************************
  * Code
@@ -62,6 +63,7 @@ void CM7_GPIO2_3_IRQHandler(void)
 
     if (intStatus & (1U << BOARD_MIPI_PANEL_TE_PIN))
     {
+        BOARD_DisplayTEPinHandler();
         s_frameDone = true;
     }
     SDK_ISR_EXIT_BARRIER;
@@ -105,7 +107,7 @@ void APP_ELCDIF_Init(void)
     ELCDIF_RgbModeInit(APP_ELCDIF, &config);
 }
 
-void APP_FillFrameBuffer(uint32_t frameBuffer[APP_IMG_HEIGHT][APP_IMG_WIDTH])
+void APP_FillFrameBuffer(uint8_t frameBuffer[APP_IMG_HEIGHT][APP_IMG_WIDTH][APP_BUF_BYTE_PER_PIXEL])
 {
     /* Background color. */
     static const uint32_t bgColor = 0U;
@@ -134,7 +136,7 @@ void APP_FillFrameBuffer(uint32_t frameBuffer[APP_IMG_HEIGHT][APP_IMG_WIDTH])
     {
         for (j = 0; j < APP_IMG_WIDTH; j++)
         {
-            frameBuffer[i][j] = bgColor;
+            *(uint32_t *)(frameBuffer[i][j]) = bgColor;
         }
     }
 
@@ -143,7 +145,7 @@ void APP_FillFrameBuffer(uint32_t frameBuffer[APP_IMG_HEIGHT][APP_IMG_WIDTH])
     {
         for (j = upperLeftX; j < lowerRightX; j++)
         {
-            frameBuffer[i][j] = fgColor;
+            *(uint32_t *)(frameBuffer[i][j]) = fgColor;
         }
     }
 
@@ -203,19 +205,47 @@ int main(void)
     BOARD_InitDebugConsole();
     BOARD_InitLcdifClock();
 
-    PRINTF("LCDIF RGB example start...\r\n");
-
-    APP_ELCDIF_Init();
-
-    BOARD_EnableLcdInterrupt();
-
     /* Clear the frame buffer. */
     memset(s_frameBuffer, 0, sizeof(s_frameBuffer));
 
     APP_FillFrameBuffer(s_frameBuffer[frameBufferIndex]);
 
+#if (USE_MIPI_PANEL == MIPI_PANEL_G1120B0MIPI)
+    PRINTF("Smart MIPI RGB example start...\r\n");
+    status_t status;
+    BOARD_PrepareDisplayController();
+    /* Initialize the display controller. */
+    status = g_dc.ops->init(&g_dc);
+    if (kStatus_Success != status)
+    {
+        return status;
+    }
+
+    dc_fb_dsi_cmd_handle_t *dcHandle;
+    dc_fb_dsi_cmd_layer_t *layer;
+    dc_fb_info_t *fbInfo;
+    dcHandle = (dc_fb_dsi_cmd_handle_t *)g_dc.prvData;
+    /* Currently only support one layer, so the layer index is always 0. */
+    layer = &(dcHandle->layers[0]);
+    fbInfo = &(layer->fbInfo);
+    fbInfo->pixelFormat = APP_VIDEO_PIXEL_FORMAT;
+    fbInfo->startX      = APP_BUF_START_X;
+    fbInfo->startY      = APP_BUF_START_Y;
+    fbInfo->width       = APP_BUF_WIDTH;
+    fbInfo->height      = APP_BUF_HEIGHT;
+    fbInfo->strideBytes = APP_BUF_STRIDE_BYTE;
+
+    layer->frameBuffer = (void *)((uint32_t)s_frameBuffer[0]);
+
+    g_dc.ops->setFrameBuffer(&g_dc, 0, layer->frameBuffer);
+    g_dc.ops->enableLayer(&g_dc, 0);
+#else
+    PRINTF("LCDIF RGB example start...\r\n");
+    APP_ELCDIF_Init();
+    BOARD_EnableLcdInterrupt();
     ELCDIF_EnableInterrupts(APP_ELCDIF, kELCDIF_CurFrameDoneInterruptEnable);
     ELCDIF_RgbModeStart(APP_ELCDIF);
+#endif
 
     while (1)
     {
@@ -223,6 +253,18 @@ int main(void)
 
         APP_FillFrameBuffer(s_frameBuffer[frameBufferIndex]);
 
+#if (USE_MIPI_PANEL == MIPI_PANEL_G1120B0MIPI)
+        layer->fbWaitTE = (void *)((uint32_t)s_frameBuffer[frameBufferIndex]);
+        SDK_DelayAtLeastUs(500000, SystemCoreClock);
+        /* Wait for frame buffer sent to display controller video memory. */
+        //while ((g_dc.ops->getProperty(&g_dc) & (uint32_t)kDC_FB_ReserveFrameBuffer))
+        //{}
+        s_frameDone = false;
+        /* Wait for previous frame complete. */
+        while (!s_frameDone)
+        {
+        }
+#else
         ELCDIF_SetNextBufferAddr(APP_ELCDIF, (uint32_t)s_frameBuffer[frameBufferIndex]);
 
         s_frameDone = false;
@@ -230,5 +272,6 @@ int main(void)
         while (!s_frameDone)
         {
         }
+#endif
     }
 }
