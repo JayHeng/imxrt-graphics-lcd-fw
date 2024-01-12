@@ -110,15 +110,26 @@ void APP_ELCDIF_Init(void)
     ELCDIF_RgbModeInit(APP_ELCDIF, &config);
 }
 
+#if APP_BUF_BYTE_PER_PIXEL == 2
+#define BG_TYPE uint16_t
+#elif APP_BUF_BYTE_PER_PIXEL == 4
+#define BG_TYPE uint32_t
+#endif
 void APP_FillFrameBuffer(uint8_t frameBuffer[APP_IMG_HEIGHT][APP_IMG_WIDTH][APP_BUF_BYTE_PER_PIXEL])
 {
-    /* Background color. */
-    static const uint32_t bgColor = 0U;
     /* Foreground color. */
     static uint8_t fgColorIndex          = 0U;
-    static const uint32_t fgColorTable[] = {0x000000FFU, 0x0000FF00U, 0x0000FFFFU, 0x00FF0000U,
+    /* Background color. */
+    static const BG_TYPE bgColor = 0U;
+#if APP_BUF_BYTE_PER_PIXEL == 2
+    /* Foreground color. */
+    static const BG_TYPE fgColorTable[] = {0x001FU, 0x07E0U, 0x07FFU, 0xF800U,
+                                            0xF81FU, 0xFFE0U, 0xFFFFU};
+#elif APP_BUF_BYTE_PER_PIXEL == 4
+    static const BG_TYPE fgColorTable[] = {0x000000FFU, 0x0000FF00U, 0x0000FFFFU, 0x00FF0000U,
                                             0x00FF00FFU, 0x00FFFF00U, 0x00FFFFFFU};
-    uint32_t fgColor                     = fgColorTable[fgColorIndex];
+#endif
+    BG_TYPE fgColor                     = fgColorTable[fgColorIndex];
 
     /* Position of the foreground rectangle. */
     static uint16_t upperLeftX  = 0U;
@@ -139,7 +150,7 @@ void APP_FillFrameBuffer(uint8_t frameBuffer[APP_IMG_HEIGHT][APP_IMG_WIDTH][APP_
     {
         for (j = 0; j < APP_IMG_WIDTH; j++)
         {
-            *(uint32_t *)(frameBuffer[i][j]) = bgColor;
+            *(BG_TYPE *)(frameBuffer[i][j]) = bgColor;
         }
     }
 
@@ -148,7 +159,7 @@ void APP_FillFrameBuffer(uint8_t frameBuffer[APP_IMG_HEIGHT][APP_IMG_WIDTH][APP_
     {
         for (j = upperLeftX; j < lowerRightX; j++)
         {
-            *(uint32_t *)(frameBuffer[i][j]) = fgColor;
+            *(BG_TYPE *)(frameBuffer[i][j]) = fgColor;
         }
     }
 
