@@ -15,15 +15,22 @@
  ******************************************************************************/
 #define DEMO_PANEL_RK043FN02H  0 /* RK043FN02H-CT */
 #define DEMO_PANEL_RK043FN66HS 1 /* RK043FN66HS-CTG */
+#define DEMO_PANEL_RK050HR18   2 /* RK050HR18-CTG */
+#define DEMO_PANEL_RK050HR01   3 /* RK050HR01-CT */
 
 /* @TEST_ANCHOR */
 
 #ifndef DEMO_PANEL
-#define DEMO_PANEL DEMO_PANEL_RK043FN02H
+#define DEMO_PANEL DEMO_PANEL_RK050HR01
 #endif
 
+#if ((DEMO_PANEL == DEMO_PANEL_RK043FN66HS) || (DEMO_PANEL == DEMO_PANEL_RK043FN02H))
 #define DEMO_PANEL_WIDTH  480
-#define DEMO_PANEL_HEIGHT 272U
+#define DEMO_PANEL_HEIGHT 272
+#elif ((DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
+#define DEMO_PANEL_WIDTH  800
+#define DEMO_PANEL_HEIGHT 480
+#endif
 
 /* Definitions for the frame buffer. */
 #define DEMO_BUFFER_COUNT 2

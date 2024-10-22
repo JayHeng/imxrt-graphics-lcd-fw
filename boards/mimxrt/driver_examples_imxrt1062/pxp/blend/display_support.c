@@ -22,7 +22,7 @@
 #define DEMO_VFP 8
 #define DEMO_VBP 12
 
-#else
+#elif (DEMO_PANEL == DEMO_PANEL_RK043FN02H)
 
 #define DEMO_HSW 41
 #define DEMO_HFP 4
@@ -30,6 +30,15 @@
 #define DEMO_VSW 10
 #define DEMO_VFP 4
 #define DEMO_VBP 2
+
+#elif ((DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
+
+#define DEMO_HSW 4
+#define DEMO_HFP 8
+#define DEMO_HBP 8
+#define DEMO_VSW 4
+#define DEMO_VFP 8
+#define DEMO_VBP 8
 
 #endif
 
@@ -76,13 +85,6 @@ const dc_fb_t g_dc = {
 void BOARD_InitLcdifPixelClock(void)
 {
     uint32_t videoPllFreq;
-    /*
-     * The desired output frame rate is 60Hz. So the pixel clock frequency is:
-     * (480 + 41 + 4 + 18) * (272 + 10 + 4 + 2) * 60 = 9.2M.
-     *
-     * Here use the video pll (93MHz) as pixel clock source,
-     * pixel clock = F_video_pll / (prediv + 1) / (div + 1) = 93 / 5 / 2 = 9.3M.
-     */
     videoPllFreq = CLOCK_GetPllFreq(kCLOCK_PllVideo);
 
     if (videoPllFreq != 93000000)
@@ -102,9 +104,30 @@ void BOARD_InitLcdifPixelClock(void)
      */
     CLOCK_SetMux(kCLOCK_LcdifPreMux, 2);
 
+#if ((DEMO_PANEL == DEMO_PANEL_RK043FN66HS) || (DEMO_PANEL == DEMO_PANEL_RK043FN02H))
+    /*
+     * The desired output frame rate is 60Hz. So the pixel clock frequency is:
+     * (480 + 41 + 4 + 18) * (272 + 10 + 4 + 2) * 60 = 9.2M.
+     *
+     * Here use the video pll (93MHz) as pixel clock source,
+     * pixel clock = F_video_pll / (prediv + 1) / (div + 1) = 93 / 5 / 2 = 9.3M.
+     */
     CLOCK_SetDiv(kCLOCK_LcdifPreDiv, 4);
 
     CLOCK_SetDiv(kCLOCK_LcdifDiv, 1);
+#elif ((DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
+    /*
+     * The desired output frame rate is 60Hz. So the pixel clock frequency is:
+     * (800 + 8 + 8) * (480 + 8 + 8) * 60 = 24.28M.
+     *
+     * Here use the video pll (93MHz) as pixel clock source,
+     * pixel clock = F_video_pll / (prediv + 1) / (div + 1) = 93 / 2 / 2 = 23.25M.
+     */
+
+    CLOCK_SetDiv(kCLOCK_LcdifPreDiv, 1);
+
+    CLOCK_SetDiv(kCLOCK_LcdifDiv, 1);
+#endif
 }
 
 static void BOARD_InitLcd(void)
