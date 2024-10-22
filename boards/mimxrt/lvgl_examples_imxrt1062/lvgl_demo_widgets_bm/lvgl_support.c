@@ -18,9 +18,9 @@
 #include "fsl_lpi2c.h"
 #include "fsl_gpio.h"
 #include "fsl_cache.h"
-#if (DEMO_PANEL == DEMO_PANEL_RK043FN66HS)
+#if ((DEMO_PANEL == DEMO_PANEL_RK043FN66HS) || (DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
 #include "fsl_gt911.h"
-#else
+#elif (DEMO_PANEL == DEMO_PANEL_RK043FN02H)
 #include "fsl_ft5406_rt.h"
 #endif
 #include "fsl_debug_console.h"
@@ -50,7 +50,7 @@
 #define LCD_VFP 8
 #define LCD_VBP 12
 
-#else
+#elif (DEMO_PANEL == DEMO_PANEL_RK043FN02H)
 
 #define LCD_HSW 41
 #define LCD_HFP 4
@@ -58,6 +58,15 @@
 #define LCD_VSW 10
 #define LCD_VFP 4
 #define LCD_VBP 2
+
+#elif ((DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
+
+#define LCD_HSW 4
+#define LCD_HFP 8
+#define LCD_HBP 8
+#define LCD_VSW 4
+#define LCD_VFP 8
+#define LCD_VBP 8
 
 #endif
 
@@ -130,7 +139,7 @@ static void DEMO_CleanInvalidateCache(lv_disp_drv_t *disp_drv);
 static void DEMO_InitTouch(void);
 
 static void DEMO_ReadTouch(lv_indev_drv_t *drv, lv_indev_data_t *data);
-#if (DEMO_PANEL == DEMO_PANEL_RK043FN66HS)
+#if ((DEMO_PANEL == DEMO_PANEL_RK043FN66HS) || (DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
 static void BOARD_PullTouchResetPin(bool pullUp);
 
 static void BOARD_ConfigTouchIntPin(gt911_int_pin_mode_t mode);
@@ -152,7 +161,7 @@ static volatile bool s_framePending;
 static SemaphoreHandle_t s_frameSema;
 #endif
 
-#if (DEMO_PANEL == DEMO_PANEL_RK043FN66HS)
+#if ((DEMO_PANEL == DEMO_PANEL_RK043FN66HS) || (DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
 static gt911_handle_t s_touchHandle;
 static const gt911_config_t s_touchConfig = {
     .I2C_SendFunc     = BOARD_Touch_I2C_Send,
@@ -166,7 +175,7 @@ static const gt911_config_t s_touchConfig = {
 };
 static int s_touchResolutionX;
 static int s_touchResolutionY;
-#else
+#elif (DEMO_PANEL == DEMO_PANEL_RK043FN02H)
 static ft5406_rt_handle_t touchHandle;
 #endif
 
@@ -249,6 +258,7 @@ void LCDIF_IRQHandler(void)
 
 static void DEMO_InitLcdClock(void)
 {
+#if ((DEMO_PANEL == DEMO_PANEL_RK043FN66HS) || (DEMO_PANEL == DEMO_PANEL_RK043FN02H))
     /*
      * The desired output frame rate is 60Hz. So the pixel clock frequency is:
      * (480 + 41 + 4 + 18) * (272 + 10 + 4 + 2) * 60 = 9.2M.
@@ -281,6 +291,40 @@ static void DEMO_InitLcdClock(void)
     CLOCK_SetDiv(kCLOCK_LcdifPreDiv, 4);
 
     CLOCK_SetDiv(kCLOCK_LcdifDiv, 1);
+#elif ((DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
+    /*
+     * The desired output frame rate is 60Hz. So the pixel clock frequency is:
+     * (800 + 8 + 8) * (480 + 8 + 8) * 60 = 24.28M.
+     * Here set the LCDIF pixel clock to 24M.
+     */
+
+    /*
+     * Initialize the Video PLL.
+     * Video PLL output clock is OSC24M * (loopDivider + (denominator / numerator)) / postDivider = 96MHz.
+     */
+    clock_video_pll_config_t config = {
+        .loopDivider = 32,
+        .postDivider = 8,
+        .numerator   = 0,
+        .denominator = 0,
+    };
+
+    CLOCK_InitVideoPll(&config);
+
+    /*
+     * 000 derive clock from PLL2
+     * 001 derive clock from PLL3 PFD3
+     * 010 derive clock from PLL5
+     * 011 derive clock from PLL2 PFD0
+     * 100 derive clock from PLL2 PFD1
+     * 101 derive clock from PLL3 PFD1
+     */
+    CLOCK_SetMux(kCLOCK_LcdifPreMux, 2);
+
+    CLOCK_SetDiv(kCLOCK_LcdifPreDiv, 1);
+
+    CLOCK_SetDiv(kCLOCK_LcdifDiv, 1);
+#endif
 }
 
 static void DEMO_InitLcdBackLight(void)
@@ -453,7 +497,7 @@ void lv_port_indev_init(void)
     lv_indev_drv_register(&indev_drv);
 }
 
-#if (DEMO_PANEL == DEMO_PANEL_RK043FN66HS)
+#if ((DEMO_PANEL == DEMO_PANEL_RK043FN66HS) || (DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
 static void BOARD_PullTouchResetPin(bool pullUp)
 {
     if (pullUp)
@@ -533,7 +577,7 @@ static void DEMO_ReadTouch(lv_indev_drv_t *drv, lv_indev_data_t *data)
     data->point.x = touch_x * LCD_WIDTH / s_touchResolutionX;
     data->point.y = touch_y * LCD_HEIGHT / s_touchResolutionY;
 }
-#else
+#elif (DEMO_PANEL == DEMO_PANEL_RK043FN02H)
 /*Initialize your touchpad*/
 static void DEMO_InitTouch(void)
 {
