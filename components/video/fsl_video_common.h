@@ -1,6 +1,5 @@
 /*
- * Copyright 2017, 2020-2021, 2023 NXP
- * All rights reserved.
+ * Copyright 2017, 2020-2021, 2023, 2024 NXP
  *
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -16,6 +15,7 @@
  *
  *   1.1.0
  *     - Add stack function which supports LIFO item management.
+ *     - Add new pixel format kVIDEO_PixelFormatNV12.
  *
  *   1.0.5
  *     - Fix IAR Pa082 warning.
@@ -39,10 +39,16 @@
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
+/*! @brief Vendor Ids. */
+#define FSL_VIDEO_FORMAT_MOD_VENDOR_VIVANTE 0x06
 
 /*! @brief Pixel format FOURCC. */
 #define FSL_VIDEO_FOURCC(a, b, c, d) \
     ((uint32_t)(a) | ((uint32_t)(b) << 8U) | ((uint32_t)(c) << 16U) | ((uint32_t)(d) << 24U))
+
+/*! @brief Pixel format FOURCC for vendor modification. */
+#define FSL_VIDEO_FOURCC_MOD(vendor, val) \
+    ((((uint64_t)FSL_VIDEO_FORMAT_MOD_VENDOR_## vendor) << 56) | ((val) & 0x00ffffffffffffffULL))
 
 /*! @brief Macro to define resolution. */
 #define FSL_VIDEO_RESOLUTION(width, height) ((uint32_t)(width) | ((uint32_t)(height) << 16U))
@@ -65,11 +71,11 @@ typedef enum _video_pixel_format
     kVIDEO_PixelFormatXBGR8888 = FSL_VIDEO_FOURCC('X', 'B', '2', '4'), /*!< 32-bit XBGR8888. */
     kVIDEO_PixelFormatBGRX8888 = FSL_VIDEO_FOURCC('B', 'X', '2', '4'), /*!< 32-bit BGRX8888. */
 
-    kVIDEO_PixelFormatRGB888 = FSL_VIDEO_FOURCC('R', 'G', '2', '4'), /*!< 24-bit RGB888. */
-    kVIDEO_PixelFormatBGR888 = FSL_VIDEO_FOURCC('B', 'G', '2', '4'), /*!< 24-bit BGR888. */
+    kVIDEO_PixelFormatRGB888 = FSL_VIDEO_FOURCC('R', 'G', '2', '4'),   /*!< 24-bit RGB888. */
+    kVIDEO_PixelFormatBGR888 = FSL_VIDEO_FOURCC('B', 'G', '2', '4'),   /*!< 24-bit BGR888. */
 
-    kVIDEO_PixelFormatRGB565 = FSL_VIDEO_FOURCC('R', 'G', '1', '6'), /*!< 16-bit RGB565. */
-    kVIDEO_PixelFormatBGR565 = FSL_VIDEO_FOURCC('B', 'G', '1', '6'), /*!< 16-bit BGR565. */
+    kVIDEO_PixelFormatRGB565 = FSL_VIDEO_FOURCC('R', 'G', '1', '6'),   /*!< 16-bit RGB565. */
+    kVIDEO_PixelFormatBGR565 = FSL_VIDEO_FOURCC('B', 'G', '1', '6'),   /*!< 16-bit BGR565. */
 
     kVIDEO_PixelFormatXRGB1555 = FSL_VIDEO_FOURCC('X', 'R', '1', '5'), /*!< 16-bit XRGB1555. */
     kVIDEO_PixelFormatRGBX5551 = FSL_VIDEO_FOURCC('R', 'X', '1', '5'), /*!< 16-bit RGBX5551. */
@@ -87,8 +93,26 @@ typedef enum _video_pixel_format
     kVIDEO_PixelFormatUYVY = FSL_VIDEO_FOURCC('U', 'Y', 'V', 'Y'), /*!< YUV422, U-Y-V-Y. */
     kVIDEO_PixelFormatVYUY = FSL_VIDEO_FOURCC('V', 'Y', 'U', 'Y'), /*!< YUV422, V-Y-U-Y. */
 
+    kVIDEO_PixelFormatNV12 = FSL_VIDEO_FOURCC('N', 'V', '1', '2'), /*!< YUV420 2 planner, 1st planner Y, 2nd planner UV. */
+
     kVIDEO_PixelFormatXYUV = FSL_VIDEO_FOURCC('X', 'Y', 'U', 'V'), /*!< YUV444, X-Y-U-V. */
     kVIDEO_PixelFormatXYVU = FSL_VIDEO_FOURCC('X', 'Y', 'V', 'U'), /*!< YUV444, X-Y-V-U. */
+
+    /* Vendor specific formats. */
+    kVIDEO_PixelFormatRGB888Nonsample
+        = FSL_VIDEO_FOURCC_MOD(VIVANTE, 5),  /*!< DECNano compressed RGB888 data with none sample. */
+    kVIDEO_PixelFormatRGB888Hsample
+        = FSL_VIDEO_FOURCC_MOD(VIVANTE, 6),  /*!< DECNano compressed RGB888 data with horizontal sample. */
+    kVIDEO_PixelFormatRGB888HVsample
+        = FSL_VIDEO_FOURCC_MOD(VIVANTE, 7),  /*!< DECNano compressed RGB888 data with both horizontal and vertical sample. Data stored in 4x4 tiles. */
+    kVIDEO_PixelFormatARGB8888Nonsample
+        = FSL_VIDEO_FOURCC_MOD(VIVANTE, 8),  /*!< DECNano compressed ARGB8888 data with none sample. */
+    kVIDEO_PixelFormatARGB8888Hsample
+        = FSL_VIDEO_FOURCC_MOD(VIVANTE, 9),  /*!< DECNano compressed ARGB8888 data with horizontal sample. */
+    kVIDEO_PixelFormatARGB8888HVsample
+        = FSL_VIDEO_FOURCC_MOD(VIVANTE, 10), /*!< DECNano compressed ARGB8888 data with both horizontal and vertical sample. Data stored in 4x4 tiles. */
+    kVIDEO_PixelFormatARGB8888Etc2
+        = FSL_VIDEO_FOURCC_MOD(VIVANTE, 11), /*!< ETC2 compressed ARGB8888 data. Data stored in 4x4 tiles. */
 } video_pixel_format_t;
 
 /*! @brief Resolution definition. */
@@ -174,7 +198,7 @@ void VIDEO_DelayMs(uint32_t ms);
  */
 uint8_t VIDEO_GetPixelSizeBits(video_pixel_format_t pixelFormat);
 
-/* @} */
+/*! @} */
 
 /*!
  * @name Ring buffer.
@@ -235,7 +259,7 @@ bool VIDEO_RINGBUF_IsEmpty(video_ringbuf_t *ringbuf);
  * @return Returns true if the ring buffer is full, otherwise returns false.
  */
 bool VIDEO_RINGBUF_IsFull(video_ringbuf_t *ringbuf);
-/* @} */
+/*! @} */
 
 /*!
  * @name Memory Pool
@@ -295,7 +319,7 @@ void *VIDEO_MEMPOOL_Get(video_mempool_t *mempool);
  */
 uint32_t VIDEO_MEMPOOL_GetCount(video_mempool_t *mempool);
 
-/* @} */
+/*! @} */
 
 /*!
  * @name Stack which supports LIFO item management.
@@ -355,7 +379,7 @@ static inline uint32_t VIDEO_STACK_GetMaxCount(video_stack_t *stack)
     return stack->maxCount;
 }
 
-/* @} */
+/*! @} */
 
 #if defined(__cplusplus)
 }

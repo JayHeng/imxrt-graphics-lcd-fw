@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2019-2020 NXP
- * All rights reserved.
+ * Copyright 2019-2020,2023,2024 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -13,6 +12,10 @@
 
 /*
  * Change log:
+ *
+ *   1.0.2
+ *     - Add support for DC8000.
+ *     - Add support for tile input format.
  *
  *   1.0.1
  *     - Fix MISRA-C 2012 issues.
@@ -29,8 +32,11 @@
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-
-#define DC_FB_LCDIF_MAX_LAYER                  1U /* Only support one layer currently. */
+#if defined(FSL_FEATURE_LCDIF_VERSION_DC8000) && FSL_FEATURE_LCDIF_VERSION_DC8000
+#define DC_FB_LCDIF_MAX_LAYER 3U
+#else
+#define DC_FB_LCDIF_MAX_LAYER 1U /* Only support one layer currently. */
+#endif
 #define DC_FB_LCDIF_DEFAULT_PIXEL_FORMAT       kVIDEO_PixelFormatRGB565
 #define DC_FB_LCDIF_DEFAULT_PIXEL_FORMAT_LCDIF kLCDIF_PixelFormatRGB565
 #define DC_FB_LCDIF_DEFAULT_BYTE_PER_PIXEL     2U

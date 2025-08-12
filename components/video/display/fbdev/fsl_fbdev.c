@@ -1,6 +1,5 @@
 /*
- * Copyright 2019-2021, 2023 NXP
- * All rights reserved.
+ * Copyright 2019-2021,2023,2024 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -128,7 +127,7 @@ status_t FBDEV_Disable(fbdev_t *fbdev)
 
     const dc_fb_t *dc = fbdev->dc;
 
-    if (!fbdev->enabled)
+    if (fbdev->enabled)
     {
         /* Wait until no frame pending. */
         if (pdTRUE != xSemaphoreTake(fbdev->semaFramePending, portMAX_DELAY))

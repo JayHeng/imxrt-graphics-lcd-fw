@@ -1,6 +1,5 @@
 /*
- * Copyright 2019-2020, 2023 NXP
- * All rights reserved.
+ * Copyright 2019-2020, 2023-2024 NXP
  *
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -93,6 +92,7 @@ serial_manager_status_t Serial_UsbCdcInstallRxCallback(serial_handle_t serialHan
                                                        serial_manager_callback_t callback,
                                                        void *callbackParam);
 void Serial_UsbCdcIsrFunction(serial_handle_t serialHandle);
+serial_manager_status_t Serial_UsbCdcGetConnectedStatus(serial_handle_t serialHandle);
 #endif
 
 #if (defined(SERIAL_PORT_TYPE_SWO) && (SERIAL_PORT_TYPE_SWO > 0U))
@@ -174,11 +174,11 @@ serial_manager_status_t Serial_PortBleWuWrite(serial_handle_t serialHandle, uint
 serial_manager_status_t Serial_PortBleWuRead(serial_handle_t serialHandle, uint8_t *buffer, uint32_t length);
 serial_manager_status_t Serial_PortBleWuCancelWrite(serial_handle_t serialHandle);
 serial_manager_status_t Serial_PortBleWuInstallTxCallback(serial_handle_t serialHandle,
-                                                            serial_manager_callback_t callback,
-                                                            void *callbackParam);
+                                                          serial_manager_callback_t callback,
+                                                          void *callbackParam);
 serial_manager_status_t Serial_PortBleWuInstallRxCallback(serial_handle_t serialHandle,
-                                                            serial_manager_callback_t callback,
-                                                            void *callbackParam);
+                                                          serial_manager_callback_t callback,
+                                                          void *callbackParam);
 void Serial_PortBleWuIsrFunction(serial_handle_t serialHandle);
 #endif
 
