@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2016, Freescale Semiconductor, Inc.
- * Copyright 2016-2017, 2020-2021 NXP
- * All rights reserved.
+ * Copyright 2016-2017, 2020-2021,2024 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -18,6 +17,9 @@
 
 /*
  * Change log:
+ *
+ *   1.2.0
+ *     - Support new DBI interface.
  *
  *   1.1.2
  *     - Fix MISRA 2012 issues.
@@ -44,6 +46,16 @@
 /*! @brief Data width between host and SSD1963 controller, only supports 8 and 16. */
 #ifndef SSD1963_DATA_WITDH
 #define SSD1963_DATA_WITDH (16U)
+#endif
+
+#if (16 == SSD1963_DATA_WITDH)
+#define SSD1963_DEFAULT_PIXEL_FORMAT         kVIDEO_PixelFormatRGB565
+#define SSD1963_DEFAULT_PIXEL_FORMAT_SSD1963 kSSD1963_RGB565
+#define SSD1963_DEFAULT_PIXEL_BYTES          2U
+#else
+#define SSD1963_DEFAULT_PIXEL_FORMAT         kVIDEO_PixelFormatRGB888
+#define SSD1963_DEFAULT_PIXEL_FORMAT_SSD1963 kSSD1963_RGB888
+#define SSD1963_DEFAULT_PIXEL_BYTES          3U
 #endif
 
 /*! @brief SSD1963 command. */
@@ -132,6 +144,7 @@
 #define SSD1963_ADDR_MODE_COL_ADDR_ORDER      (1U << 6)
 #define SSD1963_ADDR_MODE_PAGE_ADDR_ORDER     (1U << 7)
 
+#if MCUX_DBI_LEGACY
 /*! @brief ssd1963 handle. */
 typedef struct _ssd1963_handle
 {
@@ -141,6 +154,7 @@ typedef struct _ssd1963_handle
     const dbi_xfer_ops_t *xferOps; /*!< Bus transfer operations. */
     void *xferOpsData;             /*!< Data used for transfer operations. */
 } ssd1963_handle_t;
+#endif
 
 /*! @brief SSD1963 TFT interface timing polarity flags. */
 enum _ssd1963_polarity_flags
@@ -198,9 +212,9 @@ typedef struct _ssd1963_config
 /*! @brief SSD1963 flip mode. */
 typedef enum _ssd1963_flip_mode
 {
-    kSSD1963_FlipNone       = 0U,                          /*!< No flip. */
-    kSSD1963_FlipVertical   = SSD1963_ADDR_MODE_FLIP_VERT, /*!< Flip vertical, set_address_mode A[0] */
-    kSSD1963_FlipHorizontal = SSD1963_ADDR_MODE_FLIP_HORZ, /*!< Flip horizontal, set_address_mode A[1] */
+    kSSD1963_FlipNone       = 0U,                                  /*!< No flip. */
+    kSSD1963_FlipVertical   = SSD1963_ADDR_MODE_FLIP_VERT,         /*!< Flip vertical, set_address_mode A[0] */
+    kSSD1963_FlipHorizontal = SSD1963_ADDR_MODE_FLIP_HORZ,         /*!< Flip horizontal, set_address_mode A[1] */
     kSSD1963_FlipBoth =
         SSD1963_ADDR_MODE_FLIP_VERT | SSD1963_ADDR_MODE_FLIP_HORZ, /*!< Flip both vertical and horizontal. */
 } ssd1963_flip_mode_t;
@@ -212,13 +226,13 @@ typedef enum _ssd1963_flip_mode
  */
 typedef enum _ssd1963_orientation_mode_t
 {
-    kSSD1963_Orientation0 = 0U, /*!< Rotate 0 degree. */
+    kSSD1963_Orientation0 = 0U,                                                   /*!< Rotate 0 degree. */
     kSSD1963_Orientation90 =
         SSD1963_ADDR_MODE_PAGE_ADDR_ORDER | SSD1963_ADDR_MODE_PAG_COL_ADDR_ORDER, /*!< Rotate 90 degree. */
     kSSD1963_Orientation180 =
-        SSD1963_ADDR_MODE_PAGE_ADDR_ORDER | SSD1963_ADDR_MODE_COL_ADDR_ORDER, /*!< Rotate 180 degree. */
+        SSD1963_ADDR_MODE_PAGE_ADDR_ORDER | SSD1963_ADDR_MODE_COL_ADDR_ORDER,     /*!< Rotate 180 degree. */
     kSSD1963_Orientation270 =
-        SSD1963_ADDR_MODE_COL_ADDR_ORDER | SSD1963_ADDR_MODE_PAG_COL_ADDR_ORDER, /*!< Rotate 270 degree. */
+        SSD1963_ADDR_MODE_COL_ADDR_ORDER | SSD1963_ADDR_MODE_PAG_COL_ADDR_ORDER,  /*!< Rotate 270 degree. */
 } ssd1963_orientation_mode_t;
 
 /*******************************************************************************
@@ -228,6 +242,7 @@ typedef enum _ssd1963_orientation_mode_t
 extern "C" {
 #endif
 
+#if MCUX_DBI_LEGACY
 /*!
  * @brief Initailize the SSD1963.
  *
@@ -398,6 +413,15 @@ status_t SSD1963_EnableTearEffect(ssd1963_handle_t *handle, bool enable);
  * @param pixelFormat Pixel format to set.
  */
 status_t SSD1963_SetPixelFormat(ssd1963_handle_t *handle, ssd1963_pixel_interface_t pixelFormat);
+
+#else
+status_t SSD1963_Init(dbi_iface_t *iface, const ssd1963_config_t *config, uint32_t srcClock_Hz);
+
+status_t SSD1963_SetPixelFormat(dbi_iface_t *iface, ssd1963_pixel_interface_t pixelFormat);
+
+status_t SSD1963_SetBackLight(dbi_iface_t *iface, uint8_t value);
+
+#endif
 
 #if defined(__cplusplus)
 }

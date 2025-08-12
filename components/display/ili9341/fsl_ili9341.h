@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2016, Freescale Semiconductor, Inc.
  * Copyright 2016-2017, 2019-2020, 2022 NXP
- * All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -32,6 +31,10 @@
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
+/* Use DBI interface */
+#ifndef ILI9341_USE_DBI_IFACE
+#define ILI9341_USE_DBI_IFACE 0
+#endif
 
 /* Register defines */
 #define ILI9341_CMD_RST          0x01
@@ -67,16 +70,38 @@
 #define ILI9341_CMD_INVON        0x21
 #define ILI9341_CMD_INVOFF       0x20
 
+#if ILI9341_USE_DBI_IFACE
+#include "fsl_dbi.h"
+
+typedef struct _ili9341_handle
+{
+    dbi_iface_t *dbiIface;
+} ili9341_handle_t;
+
+typedef struct _ili9341_config
+{
+    uint32_t reserved;
+} ili9341_config_t;
+
+#endif /* ILI9341_USE_DBI_IFACE */
+
 /* 120ms is necessary after reset, for loading ID bytes, VCOM setting,
  * and other settings from NV memory to registers.
  */
 #define ILI9341_RESET_CANCEL_MS 120U
 
 typedef void (*ili9341_send_byte_t)(uint8_t dataToSend);
+
 typedef void (*ili9341_send_cmd_data_t)(uint8_t cmd, const uint8_t *data, uint32_t dataLen);
 
 void FT9341_Init(ili9341_send_byte_t _writeData, ili9341_send_byte_t _writeCommand);
 
 void FT9341_Init1(ili9341_send_cmd_data_t sendCmdData);
 
+#if ILI9341_USE_DBI_IFACE
+status_t ILI9341_InitDBI(ili9341_handle_t *handle, const ili9341_config_t *config, dbi_iface_t *dbiIface);
 #endif
+
+/*! @} */
+
+#endif /* _FSL_ILI9341_H_ */
