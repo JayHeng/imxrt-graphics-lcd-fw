@@ -18,7 +18,7 @@
 #include "fsl_lpi2c.h"
 #include "fsl_gpio.h"
 #include "fsl_cache.h"
-#if ((DEMO_PANEL == DEMO_PANEL_RK043FN66HS) || (DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
+#if ((DEMO_PANEL == DEMO_PANEL_RK043FN66HS) || (DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01) || (DEMO_PANEL == DEMO_PANEL_PC050IA45FZ))
 #include "fsl_gt911.h"
 #elif (DEMO_PANEL == DEMO_PANEL_RK043FN02H)
 #include "fsl_ft5406_rt.h"
@@ -59,7 +59,7 @@
 #define LCD_VFP 4
 #define LCD_VBP 2
 
-#elif ((DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
+#elif ((DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01) || (DEMO_PANEL == DEMO_PANEL_PC050IA45FZ))
 
 #define LCD_HSW 4
 #define LCD_HFP 8
@@ -139,7 +139,7 @@ static void DEMO_CleanInvalidateCache(lv_disp_drv_t *disp_drv);
 static void DEMO_InitTouch(void);
 
 static void DEMO_ReadTouch(lv_indev_drv_t *drv, lv_indev_data_t *data);
-#if ((DEMO_PANEL == DEMO_PANEL_RK043FN66HS) || (DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
+#if ((DEMO_PANEL == DEMO_PANEL_RK043FN66HS) || (DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01) || (DEMO_PANEL == DEMO_PANEL_PC050IA45FZ))
 static void BOARD_PullTouchResetPin(bool pullUp);
 
 static void BOARD_ConfigTouchIntPin(gt911_int_pin_mode_t mode);
@@ -161,7 +161,7 @@ static volatile bool s_framePending;
 static SemaphoreHandle_t s_frameSema;
 #endif
 
-#if ((DEMO_PANEL == DEMO_PANEL_RK043FN66HS) || (DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
+#if ((DEMO_PANEL == DEMO_PANEL_RK043FN66HS) || (DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01) || (DEMO_PANEL == DEMO_PANEL_PC050IA45FZ))
 static gt911_handle_t s_touchHandle;
 static const gt911_config_t s_touchConfig = {
     .I2C_SendFunc     = BOARD_Touch_I2C_Send,
@@ -291,7 +291,7 @@ static void DEMO_InitLcdClock(void)
     CLOCK_SetDiv(kCLOCK_LcdifPreDiv, 4);
 
     CLOCK_SetDiv(kCLOCK_LcdifDiv, 1);
-#elif ((DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
+#elif ((DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01) || (DEMO_PANEL == DEMO_PANEL_PC050IA45FZ))
     /*
      * The desired output frame rate is 60Hz. So the pixel clock frequency is:
      * (800 + 8 + 8) * (480 + 8 + 8) * 60 = 24.28M.
@@ -497,7 +497,7 @@ void lv_port_indev_init(void)
     lv_indev_drv_register(&indev_drv);
 }
 
-#if ((DEMO_PANEL == DEMO_PANEL_RK043FN66HS) || (DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
+#if ((DEMO_PANEL == DEMO_PANEL_RK043FN66HS) || (DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01) || (DEMO_PANEL == DEMO_PANEL_PC050IA45FZ))
 static void BOARD_PullTouchResetPin(bool pullUp)
 {
     if (pullUp)
