@@ -31,7 +31,7 @@
 #define DEMO_VFP 4
 #define DEMO_VBP 2
 
-#elif ((DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
+#elif ((DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01) || (DEMO_PANEL == DEMO_PANEL_PC050IA45FZ))
 
 #define DEMO_HSW 4
 #define DEMO_HFP 8
@@ -115,7 +115,7 @@ void BOARD_InitLcdifPixelClock(void)
     CLOCK_SetDiv(kCLOCK_LcdifPreDiv, 4);
 
     CLOCK_SetDiv(kCLOCK_LcdifDiv, 1);
-#elif ((DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01))
+#elif ((DEMO_PANEL == DEMO_PANEL_RK050HR18) || (DEMO_PANEL == DEMO_PANEL_RK050HR01) || (DEMO_PANEL == DEMO_PANEL_PC050IA45FZ))
     /*
      * The desired output frame rate is 60Hz. So the pixel clock frequency is:
      * (800 + 8 + 8) * (480 + 8 + 8) * 60 = 24.28M.
